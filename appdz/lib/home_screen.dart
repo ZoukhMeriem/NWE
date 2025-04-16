@@ -291,12 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
       ));
 
-      _polylines.add(Polyline(
-        polylineId: PolylineId("simple_route"),
-        points: [start, end],
-        color: Colors.orange,
-        width: 4,
-      ));
+
     });
   }
 
