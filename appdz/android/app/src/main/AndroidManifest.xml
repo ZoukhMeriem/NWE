@@ -5,7 +5,7 @@
 
 
     <application
-        android:label="DZ TRAIN"
+        android:label="DzTrain"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
