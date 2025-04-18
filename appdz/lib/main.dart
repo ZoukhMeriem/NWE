@@ -11,6 +11,10 @@ import 'package:dztrainfay/SignInScreen.dart';
 import 'package:dztrainfay/SignUpScreen.dart';
 import 'package:dztrainfay/VerifyEmailScreen.dart';
 import 'package:dztrainfay/onboarding_screen.dart';
+import 'package:dztrainfay/HomePage.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,26 +23,49 @@ void main() async {
   );
 
   final prefs = await SharedPreferences.getInstance();
-  final bool onboardingSeen = prefs.getBool('onboarding_seen') ?? false;
 
-  runApp(MyApp(onboardingSeen: onboardingSeen));
+  final bool onboardingSeen = prefs.getBool('onboarding_seen') ?? false;
+  final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+  final String username = prefs.getString('username') ?? 'Utilisateur';
+
+  runApp(MyApp(
+    onboardingSeen: onboardingSeen,
+    isLoggedIn: isLoggedIn,
+    username: username,
+  ));
 }
 
 class MyApp extends StatelessWidget {
   final bool onboardingSeen;
+  final bool isLoggedIn;
+  final String username;
 
-  MyApp({required this.onboardingSeen});
+  MyApp({
+    required this.onboardingSeen,
+    required this.isLoggedIn,
+    required this.username,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // 🔒 On ne fait confiance qu'à SharedPreferences
+    Widget startScreen;
+
+    if (!onboardingSeen) {
+      startScreen = OnboardingScreen(); // première ouverture
+    } else if (isLoggedIn) {
+      startScreen = HomePage(username: username); // ✅ utilisateur connecté (contrôlé par toi)
+    } else {
+      startScreen = SignInScreen(); // 🔐 pas connecté
+    }
+
     return MaterialApp(
-      title: 'Flutter Auth App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: onboardingSeen ? SignInScreen() : OnboardingScreen(),
+      title: 'DZ Train App',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: startScreen,
       routes: {
-        '/login': (context) => SignInScreen(), // Ajout de route pour déconnexion
+        '/login': (context) => SignInScreen(),
         '/signup': (context) => RegisterPage(),
         '/forgot-password': (context) => ForgotPasswordScreen(),
         '/verify-email': (context) => VerifyEmailScreen(
@@ -52,19 +79,28 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// ✅ Fonction de déconnexion
+// ✅ Déconnexion complète et sécurisée
 Future<void> logout(BuildContext context) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.clear();
+
+  await FirebaseAuth.instance.signOut();
+  await GoogleSignIn().signOut();
+
   Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
 }
 
-// ✅ Fonction de suppression de compte
+// ✅ Suppression de compte (optionnelle)
 Future<void> deleteAccount(BuildContext context, String userId) async {
   try {
     await FirebaseFirestore.instance.collection('User').doc(userId).delete();
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+
+    await FirebaseAuth.instance.signOut();
+    await GoogleSignIn().signOut();
+
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Compte supprimé avec succès')),
