@@ -196,7 +196,16 @@ class _SignInScreenState extends State<SignInScreen> {
                             .where('password', isEqualTo: password)
                             .get();
 
+
                         if (userSnapshot.docs.isNotEmpty) {
+
+                          // ✅ Mise à jour CompteUser.loggedIn à true
+                          await FirebaseFirestore.instance
+                              .collection('CompteUser')
+                              .doc(username)
+                              .set({'loggedIn': true}, SetOptions(merge: true));
+
+                          
                           final prefs = await SharedPreferences.getInstance();
                           await prefs.setBool('isLoggedIn', true);
                           await prefs.setString('username', username);
