@@ -182,7 +182,7 @@ class AdminHomePage extends StatelessWidget {
                   _buildMenuButton(
                     context: context,
                     label: "Voir les Statistiques",
-                    screen: StatisticsPage(),
+                    screen: StylishStatsScreen (),//StatistiquesScreen(),
                     icon: Icons.bar_chart,
                     color: const Color(0xFFB3A0F1),
                   ),
