@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../main.dart';
 import 'user_info_page.dart';
 import 'settings_page.dart';
 import 'support_page.dart';
@@ -153,9 +154,35 @@ class _ProfilePageState extends State<ProfilePage> {
                     );
                   }),
                   const Divider(),
-                  _buildListTile(Icons.logout, 'Déconnexion', () {
-                    LogoutHelper.showLogoutDialog(context);
-                  }),
+                 // _buildListTile(Icons.logout, 'Déconnexion', () {
+                   // LogoutHelper.showLogoutDialog(context);
+
+                    _buildListTile(Icons.logout, 'Déconnexion', () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text("Déconnexion"),
+                          content: Text("Voulez-vous vraiment vous déconnecter ?"),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: Text("Annuler"),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: Text("Déconnexion"),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirmed == true) {
+                        await logout(context); // ✅ ici on applique la mise à jour du loggedIn à false
+                      }
+                    }),
+
+
+
                 ],
               ),
             ),
