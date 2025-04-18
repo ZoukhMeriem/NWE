@@ -1,58 +1,9 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class AdminListScreen extends StatelessWidget {
-  final CollectionReference adminsRef =
-  FirebaseFirestore.instance.collection('Admin');
-
-  void _showAddAdminDialog(BuildContext context) {
-    final TextEditingController nomController = TextEditingController();
-    final TextEditingController prenomController = TextEditingController();
-    final TextEditingController usernameController = TextEditingController();
-    final TextEditingController passwordController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Ajouter un admin"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nomController, decoration: InputDecoration(labelText: "Nom")),
-            TextField(controller: prenomController, decoration: InputDecoration(labelText: "Prénom")),
-            TextField(controller: usernameController, decoration: InputDecoration(labelText: "Nom d'utilisateur")),
-            TextField(controller: passwordController, obscureText: true, decoration: InputDecoration(labelText: "Mot de passe")),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("Annuler"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final nom = nomController.text.trim();
-              final prenom = prenomController.text.trim();
-              final username = usernameController.text.trim();
-              final password = passwordController.text.trim();
-
-              if (nom.isNotEmpty && prenom.isNotEmpty && username.isNotEmpty && password.isNotEmpty) {
-                await adminsRef.add({
-                  'Nom': nom,
-                  'Prénom': prenom,
-                  'Username': username,
-                  'Password': password,
-                });
-                Navigator.pop(context);
-              }
-            },
-            child: Text("Ajouter"),
-          ),
-        ],
-      ),
-    );
-  }
-
+  final CollectionReference adminsRef = FirebaseFirestore.instance.collection('Admin');
 
   void _showAdminDetailsDialog(BuildContext context, DocumentSnapshot adminDoc) {
     final data = adminDoc.data() as Map<String, dynamic>;
@@ -68,19 +19,21 @@ class AdminListScreen extends StatelessWidget {
             Text("Nom : ${data['Nom']}"),
             Text("Prénom : ${data['Prénom']}"),
             Text("Nom d'utilisateur : ${data['Username']}"),
-            Text("Mot de passe : ${data['Password']}"),
             Text("Email : ${data['Email']}"),
-
+            Text("Mot de passe : ${data['Password']}"),
             SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: () {
-                Navigator.pop(context); // Fermer cette boîte
+                Navigator.pop(context);
                 _showDeleteConfirmation(context, adminDoc.id);
               },
-              icon: Icon(Icons.delete, color: Colors.white),
-              label: Text("Supprimer", style: TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            )
+              icon: Icon(Icons.delete),
+              label: Text("Supprimer"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+              ),
+            ),
           ],
         ),
         actions: [
@@ -120,7 +73,15 @@ class AdminListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Liste des Admins')),
+      appBar: AppBar(
+        title: Text(
+          'Liste des Admins',
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Color(0xFFB3D9FF),
+        centerTitle: true,
+        elevation: 2,
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: adminsRef.snapshots(),
         builder: (context, snapshot) {
@@ -129,6 +90,7 @@ class AdminListScreen extends StatelessWidget {
           final admins = snapshot.data!.docs;
 
           return ListView.builder(
+            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
             itemCount: admins.length,
             itemBuilder: (context, index) {
               final admin = admins[index];
@@ -136,34 +98,25 @@ class AdminListScreen extends StatelessWidget {
               final nom = data['Nom'] ?? '';
               final prenom = data['Prénom'] ?? '';
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.grey.shade300, width: 1.5),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 5,
-                        offset: Offset(0, 2),
-                      )
-                    ],
+              return Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Color(0xFFE8AAB4),
+                    child: Icon(Icons.person, color: Colors.white),
                   ),
-                  child: ListTile(
-                    title: Text("$nom $prenom"),
-                    onTap: () => _showAdminDetailsDialog(context, admin),
-                  ),
+                  title: Text("$nom $prenom", style: TextStyle(fontWeight: FontWeight.bold)),
+                  trailing: Icon(Icons.info_outline),
+                  onTap: () => _showAdminDetailsDialog(context, admin),
                 ),
               );
             },
           );
-
-
         },
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: Color(0xFFE8AAB4),
         onPressed: () {
           Navigator.push(
             context,
@@ -172,10 +125,10 @@ class AdminListScreen extends StatelessWidget {
         },
         child: Icon(Icons.add),
       ),
-
     );
   }
 }
+
 
 
 
@@ -216,37 +169,70 @@ class _AddAdminScreenState extends State<AddAdminScreen> {
     }
   }
 
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String? Function(String?) validator,
+    bool obscureText = false,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: EdgeInsets.symmetric(vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: TextFormField(
+          controller: controller,
+          obscureText: obscureText,
+          decoration: InputDecoration(
+            labelText: label,
+            border: InputBorder.none,
+          ),
+          validator: validator,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Ajouter un admin")),
-      body: Padding(
+      appBar: AppBar(
+        title: Text(
+          "Ajouter un admin",
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Color(0xFFB3D9FF),
+        centerTitle: true,
+        elevation: 2,
+      ),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: Column(
             children: [
-              TextFormField(
+              _buildTextField(
                 controller: _prenomController,
-                decoration: InputDecoration(labelText: 'Prénom'),
+                label: 'Prénom',
                 validator: (value) =>
                 value!.isEmpty ? 'Champ obligatoire' : null,
               ),
-              TextFormField(
+              _buildTextField(
                 controller: _nomController,
-                decoration: InputDecoration(labelText: 'Nom'),
+                label: 'Nom',
                 validator: (value) =>
                 value!.isEmpty ? 'Champ obligatoire' : null,
               ),
-              TextFormField(
+              _buildTextField(
                 controller: _usernameController,
-                decoration: InputDecoration(labelText: 'Nom d\'utilisateur'),
+                label: 'Nom d\'utilisateur',
                 validator: (value) =>
                 value!.isEmpty ? 'Champ obligatoire' : null,
               ),
-              TextFormField(
+              _buildTextField(
                 controller: _emailController,
-                decoration: InputDecoration(labelText: 'Email'),
+                label: 'Email',
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Champ obligatoire';
@@ -256,17 +242,28 @@ class _AddAdminScreenState extends State<AddAdminScreen> {
                   return null;
                 },
               ),
-              TextFormField(
+              _buildTextField(
                 controller: _passwordController,
-                decoration: InputDecoration(labelText: 'Mot de passe'),
+                label: 'Mot de passe',
                 obscureText: true,
                 validator: (value) =>
                 value!.isEmpty ? 'Champ obligatoire' : null,
               ),
-              SizedBox(height: 20),
-              ElevatedButton(
+              SizedBox(height: 24),
+              ElevatedButton.icon(
                 onPressed: _addAdmin,
-                child: Text('Ajouter l\'admin'),
+                icon: Icon(Icons.save),
+                label: Text("Ajouter l'admin"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFFE8AAB4),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding:
+                  EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+                  textStyle: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
