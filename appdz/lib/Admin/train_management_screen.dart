@@ -46,38 +46,82 @@ class _TrainManagementScreenState extends State<TrainManagementScreen> {
   void showTrainForm({DocumentSnapshot? train}) {
     final numController = TextEditingController(text: train?['numtrain'] ?? '');
     final lineController = TextEditingController(text: train?['lineId'] ?? '');
-    final statusController = TextEditingController(text: train?['status'] ?? '');
-    final latController = TextEditingController(text: train?['position']?['lat']?.toString() ?? '');
-    final lngController = TextEditingController(text: train?['position']?['lng']?.toString() ?? '');
+    final latController = TextEditingController(
+        text: train?['position']?['lat']?.toString() ?? '');
+    final lngController = TextEditingController(
+        text: train?['position']?['lng']?.toString() ?? '');
+
+    String selectedStatus = train?['status'] ?? 'en_service';
+    final List<String> statusOptions = ['en_service', 'hors_service', 'maintenance'];
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(train == null ? 'Ajouter un Train' : 'Modifier le Train'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          train == null ? 'Ajouter un Train' : 'Modifier le Train',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         content: SingleChildScrollView(
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: numController,
-                decoration: InputDecoration(labelText: 'Numéro du train'),
+                decoration: InputDecoration(
+                  labelText: 'Numéro du train',
+                  prefixIcon: Icon(Icons.train),
+                  border: OutlineInputBorder(),
+                ),
               ),
+              SizedBox(height: 12),
               TextField(
                 controller: lineController,
-                decoration: InputDecoration(labelText: 'ID de la ligne'),
+                decoration: InputDecoration(
+                  labelText: 'ID de la ligne',
+                  prefixIcon: Icon(Icons.line_weight),
+                  border: OutlineInputBorder(),
+                ),
               ),
-              TextField(
-                controller: statusController,
-                decoration: InputDecoration(labelText: 'Statut'),
+              SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: selectedStatus,
+                items: statusOptions.map((status) {
+                  return DropdownMenuItem(
+                    value: status,
+                    child: Text(status),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    selectedStatus = value;
+                  }
+                },
+                decoration: InputDecoration(
+                  labelText: 'Statut',
+                  prefixIcon: Icon(Icons.info),
+                  border: OutlineInputBorder(),
+                ),
               ),
+              SizedBox(height: 12),
               TextField(
                 controller: latController,
-                decoration: InputDecoration(labelText: 'Latitude'),
-                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Latitude',
+                  prefixIcon: Icon(Icons.my_location),
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
               ),
+              SizedBox(height: 12),
               TextField(
                 controller: lngController,
-                decoration: InputDecoration(labelText: 'Longitude'),
-                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Longitude',
+                  prefixIcon: Icon(Icons.location_on),
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
               ),
             ],
           ),
@@ -87,12 +131,27 @@ class _TrainManagementScreenState extends State<TrainManagementScreen> {
             onPressed: () => Navigator.pop(context),
             child: Text('Annuler'),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
+            icon: Icon(train == null ? Icons.add : Icons.edit),
+            label: Text(train == null ? 'Ajouter' : 'Modifier'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFFE8AAB4),
+            ),
             onPressed: () async {
+              if (numController.text.isEmpty ||
+                  lineController.text.isEmpty ||
+                  latController.text.isEmpty ||
+                  lngController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Veuillez remplir tous les champs')),
+                );
+                return;
+              }
+
               final data = {
-                'numtrain': numController.text,
-                'lineId': lineController.text,
-                'status': statusController.text,
+                'numtrain': numController.text.trim(),
+                'lineId': lineController.text.trim(),
+                'status': selectedStatus,
                 'lastUpdated': FieldValue.serverTimestamp(),
                 'position': {
                   'lat': double.tryParse(latController.text) ?? 0.0,
@@ -108,7 +167,6 @@ class _TrainManagementScreenState extends State<TrainManagementScreen> {
 
               Navigator.pop(context);
             },
-            child: Text(train == null ? 'Ajouter' : 'Modifier'),
           ),
         ],
       ),
@@ -185,7 +243,7 @@ class _TrainManagementScreenState extends State<TrainManagementScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => showTrainForm(),
         child: Icon(Icons.add),
-        backgroundColor: Color(0xFFB3CDE0),
+        backgroundColor: Color(0xFFE8AAB4),
       ),
     );
   }
