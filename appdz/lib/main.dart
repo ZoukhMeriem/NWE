@@ -27,10 +27,25 @@ void main() async {
   final bool onboardingSeen = prefs.getBool('onboarding_seen') ?? false;
   final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
   final String username = prefs.getString('username') ?? 'Utilisateur';
+  bool loggedIn = false;
+  await prefs.setString('username', username);
+  await prefs.setBool('isLoggedIn', true); // optionnel pour plus tard
+
+  if (username.isNotEmpty) {
+    final doc = await FirebaseFirestore.instance
+        .collection('CompteUser')
+        .doc(username)
+        .get();
+
+    if (doc.exists) {
+      loggedIn = doc['loggedIn'] ?? false;
+    }
+  }
+
 
   runApp(MyApp(
     onboardingSeen: onboardingSeen,
-    isLoggedIn: isLoggedIn,
+    isLoggedIn: loggedIn,
     username: username,
   ));
 }
@@ -60,7 +75,7 @@ class MyApp extends StatelessWidget {
     }
 
     return MaterialApp(
-      title: 'DZ Train App',
+      title: 'DzTrain',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue),
       home: startScreen,
@@ -82,13 +97,29 @@ class MyApp extends StatelessWidget {
 // ✅ Déconnexion complète et sécurisée
 Future<void> logout(BuildContext context) async {
   final prefs = await SharedPreferences.getInstance();
-  await prefs.clear();
+  final String username = prefs.getString('username') ?? '';
 
+  try {
+    if (username.isNotEmpty) {
+      await FirebaseFirestore.instance
+          .collection('CompteUser')
+          .doc(username)
+          .set({'loggedIn': false}, SetOptions(merge: true));
+
+      print("✅ loggedIn mis à false pour $username");
+    }
+  } catch (e) {
+    print("❌ Erreur lors de la mise à jour de loggedIn: $e");
+  }
+
+  await prefs.clear();
   await FirebaseAuth.instance.signOut();
   await GoogleSignIn().signOut();
 
   Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
 }
+
+
 
 // ✅ Suppression de compte (optionnelle)
 Future<void> deleteAccount(BuildContext context, String userId) async {
