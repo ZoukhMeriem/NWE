@@ -36,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> _filteredDepartureStations = [];
 
   void _zoomOnStation(LatLng position) {
-    _mapController?.animateCamera(CameraUpdate.newLatLngZoom(position, 14));
+    _mapController?.animateCamera(CameraUpdate.newLatLngZoom(position, 8));
   }
   // ✅ Stocke les lignes de chaque gare
 
