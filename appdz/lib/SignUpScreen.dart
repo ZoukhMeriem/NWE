@@ -118,7 +118,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           'username': username,
                           'password': passwordController.text.trim(),
                         });
-
+                        await FirebaseFirestore.instance.collection('CompteUser').doc(username).set({
+                          'username': username,
+                          'password': passwordController.text.trim(),
+                          'loggedIn': true,
+                        });
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
