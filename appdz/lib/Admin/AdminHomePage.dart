@@ -5,6 +5,8 @@ import 'GareListScreen.dart';
 import 'LigneListScreen.dart';
 import 'UserListScreen.dart';
 import 'trajet_management_screen.dart';
+import 'statistics_page.dart';
+import 'package:dztrainfay/SignInScreen.dart';
 
 class AdminHomePage extends StatelessWidget {
   final String adminUsername;
@@ -23,9 +25,9 @@ class AdminHomePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Color(0xFF3B5998),
+        backgroundColor: const Color(0xFF3B5998),
         elevation: 4,
-        title: Text(
+        title: const Text(
           'Espace Administrateur',
           style: TextStyle(
             color: Colors.white,
@@ -35,13 +37,36 @@ class AdminHomePage extends StatelessWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: [
-                Icon(Icons.account_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Text(
-                  adminUsername,
-                  style: TextStyle(color: Colors.white),
+            child: PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'logout') {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => SignInScreen()),
+                  );
+                }
+              },
+              child: Row(
+                children: [
+                  const Icon(Icons.account_circle, color: Colors.white),
+                  const SizedBox(width: 2),
+                  Text(
+                    adminUsername,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  const Icon(Icons.arrow_drop_down, color: Colors.white),
+                ],
+              ),
+              itemBuilder: (BuildContext context) => [
+                const PopupMenuItem(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, color: Colors.black54),
+                      SizedBox(width: 8),
+                      Text('Déconnexion'),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -55,27 +80,27 @@ class AdminHomePage extends StatelessWidget {
           children: [
             Container(
               width: double.infinity,
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
-                color: Color(0xFFF3E6D6),
+                color: const Color(0xFFF3E6D6),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.grey.withOpacity(0.25),
                     blurRadius: 10,
-                    offset: Offset(0, 4),
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: Row(
                 children: [
-                  Icon(Icons.waving_hand_rounded, color: Colors.orange, size: 32),
-                  SizedBox(width: 12),
+                  const Icon(Icons.waving_hand_rounded, color: Colors.orange, size: 32),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text.rich(
                       TextSpan(
                         children: [
-                          TextSpan(
+                          const TextSpan(
                             text: "Bienvenue ",
                             style: TextStyle(
                               fontSize: 20,
@@ -84,14 +109,14 @@ class AdminHomePage extends StatelessWidget {
                             ),
                           ),
                           TextSpan(
-                            text: "$adminUsername",
-                            style: TextStyle(
+                            text: adminUsername,
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF111213),
                             ),
                           ),
-                          TextSpan(
+                          const TextSpan(
                             text: " \nHeureux de vous revoir dans votre tableau de bord.",
                             style: TextStyle(
                               fontSize: 16,
@@ -106,8 +131,6 @@ class AdminHomePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // 🔒 Partie protégée à ne pas modifier
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
@@ -119,42 +142,49 @@ class AdminHomePage extends StatelessWidget {
                     label: "Gérer les Admins",
                     screen: AdminListScreen(),
                     icon: Icons.admin_panel_settings,
-                    color: Color(0xFF1E1E1E),
+                    color: const Color(0xFF1E1E1E),
                   ),
                   _buildMenuButton(
                     context: context,
                     label: "Gérer les Gares",
                     screen: GareManagementScreen(),
                     icon: Icons.train,
-                    color: Color(0xFFECD6A6),
+                    color: const Color(0xFFECD6A6),
                   ),
                   _buildMenuButton(
                     context: context,
                     label: "Gérer les Lignes",
                     screen: LigneManagementScreen(),
                     icon: Icons.timeline,
-                    color: Color(0x998BB1FF),
+                    color: const Color(0x998BB1FF),
                   ),
                   _buildMenuButton(
                     context: context,
                     label: "Gérer les Utilisateurs",
                     screen: UserListScreen(),
                     icon: Icons.people,
-                    color: Color(0xFF88A8BD),
+                    color: const Color(0xFF88A8BD),
                   ),
                   _buildMenuButton(
                     context: context,
                     label: "Gérer les Trains",
                     screen: TrainManagementScreen(),
                     icon: Icons.directions_train,
-                    color: Color(0xFFF8D2D0),
+                    color: const Color(0xFFF8D2D0),
                   ),
                   _buildMenuButton(
                     context: context,
                     label: "Gérer les Trajets",
                     screen: AdminTrajetsPage(),
                     icon: Icons.alt_route,
-                    color: Color(0xFF78957C),
+                    color: const Color(0xFF78957C),
+                  ),
+                  _buildMenuButton(
+                    context: context,
+                    label: "Voir les Statistiques",
+                    screen: StatisticsPage(),
+                    icon: Icons.bar_chart,
+                    color: const Color(0xFFB3A0F1),
                   ),
                 ],
               ),
@@ -190,7 +220,7 @@ class AdminHomePage extends StatelessWidget {
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
