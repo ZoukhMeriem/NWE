@@ -89,33 +89,75 @@ class _GareManagementScreenState extends State<GareManagementScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
+      ),
       builder: (context) => Padding(
         padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-            left: 20,
-            right: 20,
-            top: 20),
+          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          left: 20,
+          right: 20,
+          top: 20,
+        ),
         child: SingleChildScrollView(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Modifier la gare",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[400],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const Center(
+                child: Text(
+                  "✏️ Modifier la gare",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              const Text("Informations de la gare", style: TextStyle(fontWeight: FontWeight.bold)),
+              const Divider(),
+
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: 'Nom'),
+                decoration: const InputDecoration(
+                  labelText: 'Nom de la gare',
+                  prefixIcon: Icon(Icons.train),
+                ),
               ),
+              const SizedBox(height: 10),
+
               TextField(
                 controller: _latController,
-                decoration: const InputDecoration(labelText: 'Latitude'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: _lngController,
-                decoration: const InputDecoration(labelText: 'Longitude'),
+                decoration: const InputDecoration(
+                  labelText: 'Latitude',
+                  prefixIcon: Icon(Icons.location_on),
+                ),
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 10),
-              const Text("Sélectionnez les lignes :"),
+
+              TextField(
+                controller: _lngController,
+                decoration: const InputDecoration(
+                  labelText: 'Longitude',
+                  prefixIcon: Icon(Icons.location_on_outlined),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+
+              const SizedBox(height: 20),
+              const Text("📍 Sélectionnez les lignes associées",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Divider(),
+
               ..._lignes.map((ligne) {
                 final id = ligne.id;
                 final nom = ligne['nom'];
@@ -133,38 +175,53 @@ class _GareManagementScreenState extends State<GareManagementScreen> {
                   },
                 );
               }).toList(),
-              ElevatedButton(
-                onPressed: () async {
-                  if (nameController.text.isEmpty ||
-                      _latController.text.isEmpty ||
-                      _lngController.text.isEmpty ||
-                      selectedLines.isEmpty) {
+
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    if (nameController.text.isEmpty ||
+                        _latController.text.isEmpty ||
+                        _lngController.text.isEmpty ||
+                        selectedLines.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text("Veuillez remplir tous les champs")),
+                      );
+                      return;
+                    }
+
+                    await FirebaseFirestore.instance
+                        .collection('Gare')
+                        .doc(gare.id)
+                        .update({
+                      'name': nameController.text,
+                      'location': {
+                        'lat': double.tryParse(_latController.text) ?? 0,
+                        'lng': double.tryParse(_lngController.text) ?? 0
+                      },
+                      'lineId': selectedLines
+                    });
+                    Navigator.pop(context);
+                    _fetchData();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                          content: Text("Veuillez remplir tous les champs")),
+                          content: Text("✅ Gare modifiée avec succès")),
                     );
-                    return;
-                  }
-
-                  await FirebaseFirestore.instance
-                      .collection('Gare')
-                      .doc(gare.id)
-                      .update({
-                    'name': nameController.text,
-                    'location': {
-                      'lat': double.tryParse(_latController.text) ?? 0,
-                      'lng': double.tryParse(_lngController.text) ?? 0
-                    },
-                    'lineId': selectedLines
-                  });
-                  Navigator.pop(context);
-                  _fetchData();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Gare modifiée avec succès")),
-                  );
-                },
-                child: const Text("Enregistrer"),
-              )
+                  },
+                  icon: const Icon(Icons.save),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFFE8AAB4),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  label: const Text("Enregistrer les modifications",
+                      style: TextStyle(fontSize: 16)),
+                ),
+              ),
             ],
           ),
         ),
@@ -362,7 +419,9 @@ class _GareManagementScreenState extends State<GareManagementScreen> {
                         IconButton(
                           icon: Icon(Icons.delete, color: Colors.red),
                           onPressed: () {
-                            _deleteGare(gare['name']);
+                            _showDeleteConfirmationDialog(gare);
+
+
                           },
                         ),
                       ],
@@ -382,4 +441,35 @@ class _GareManagementScreenState extends State<GareManagementScreen> {
       ),
     );
   }
+  void _showDeleteConfirmationDialog(DocumentSnapshot gare) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Confirmation de suppression"),
+          content: Text("Voulez-vous vraiment supprimer la gare '${gare['name']}' ?"),
+          actions: [
+            TextButton(
+              child: const Text("Annuler"),
+              onPressed: () {
+                Navigator.of(context).pop(); // Ferme la boîte de dialogue
+              },
+            ),
+            TextButton(
+              child: const Text("Supprimer", style: TextStyle(color: Colors.red)),
+              onPressed: () async {
+                Navigator.of(context).pop(); // Ferme la boîte de dialogue
+                await FirebaseFirestore.instance.collection('Gare').doc(gare.id).delete();
+                _fetchData(); // Actualise la liste
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Gare supprimée")),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 }
