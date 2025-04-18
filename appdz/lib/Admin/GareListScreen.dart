@@ -181,33 +181,68 @@ class _GareManagementScreenState extends State<GareManagementScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => Padding(
         padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-            left: 20,
-            right: 20,
-            top: 20),
+          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          left: 20,
+          right: 20,
+          top: 20,
+        ),
         child: SingleChildScrollView(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Ajouter une nouvelle gare",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Center(
+                child: Text(
+                  "Ajouter une nouvelle gare",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: Colors.blueGrey[800],
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: 'Nom'),
+                decoration: InputDecoration(
+                  labelText: 'Nom',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: Icon(Icons.train),
+                ),
               ),
+              SizedBox(height: 12),
               TextField(
                 controller: _latController,
-                decoration: const InputDecoration(labelText: 'Latitude'),
+                decoration: InputDecoration(
+                  labelText: 'Latitude',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: Icon(Icons.location_on),
+                ),
                 keyboardType: TextInputType.number,
               ),
+              SizedBox(height: 12),
               TextField(
                 controller: _lngController,
-                decoration: const InputDecoration(labelText: 'Longitude'),
+                decoration: InputDecoration(
+                  labelText: 'Longitude',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: Icon(Icons.location_on_outlined),
+                ),
                 keyboardType: TextInputType.number,
               ),
-              const SizedBox(height: 10),
-              const Text("Sélectionnez les lignes :"),
+              SizedBox(height: 20),
+              Text("Sélectionnez les lignes :", style: TextStyle(fontWeight: FontWeight.w600)),
               ..._lignes.map((ligne) {
                 final id = ligne.id;
                 final nom = ligne['nom'];
@@ -216,51 +251,64 @@ class _GareManagementScreenState extends State<GareManagementScreen> {
                   value: selectedLines.contains(id),
                   onChanged: (value) {
                     setState(() {
-                      if (value!) {
+                      if (value == true) {
                         selectedLines.add(id);
                       } else {
                         selectedLines.remove(id);
                       }
                     });
                   },
+                  controlAffinity: ListTileControlAffinity.leading,
                 );
               }).toList(),
-              ElevatedButton(
+              SizedBox(height: 20),
+              ElevatedButton.icon(
                 onPressed: () async {
                   if (nameController.text.isEmpty ||
                       _latController.text.isEmpty ||
                       _lngController.text.isEmpty ||
                       selectedLines.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Veuillez remplir tous les champs")),
+                      const SnackBar(content: Text("Veuillez remplir tous les champs")),
                     );
                     return;
                   }
 
                   await FirebaseFirestore.instance.collection('Gare').add({
                     'id': DateTime.now().millisecondsSinceEpoch,
-                    'name': nameController.text,
+                    'name': nameController.text.trim(),
                     'location': {
                       'lat': double.tryParse(_latController.text) ?? 0,
                       'lng': double.tryParse(_lngController.text) ?? 0
                     },
                     'lineId': selectedLines
                   });
+
                   Navigator.pop(context);
                   _fetchData();
+
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("Gare ajoutée avec succès")),
                   );
                 },
-                child: const Text("Ajouter"),
-              )
+                icon: Icon(Icons.add_location_alt),
+                label: Text("Ajouter la gare"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFFE8AAB4),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
   }
+
 
   void _deleteGare(DocumentSnapshot gare) async {
     await FirebaseFirestore.instance.collection('Gare').doc(gare.id).delete();
@@ -274,7 +322,7 @@ class _GareManagementScreenState extends State<GareManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gestion des Gares'),
+          title: const Text('Gestion des Gares'),
           backgroundColor: Color(0xFFA7C7E7)
       ),
       body: Column(
@@ -330,7 +378,7 @@ class _GareManagementScreenState extends State<GareManagementScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddGareDialog,
         child: const Icon(Icons.add),
-        backgroundColor: Color(0xFFB3CDE0), // Bleu pastel
+        backgroundColor: Color(0xFFE8AAB4), // Bleu pastel
       ),
     );
   }
