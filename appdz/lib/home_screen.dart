@@ -235,12 +235,33 @@ class _HomeScreenState extends State<HomeScreen> {
                 title: Text(station.key),
                 subtitle: Text("Distance: ${station.value.toStringAsFixed(2)} m"),
                 onTap: () {
+                  final selectedStation = station.key;
+
                   setState(() {
-                    _selectedDeparture = station.key;
-                    _selectedDeparturePosition = _stations[station.key];
+                    _selectedDeparture = selectedStation;
+                    _selectedDeparturePosition = _stations[selectedStation];
+                    _useCurrentLocationAsDeparture = false;
+
+                    // 👉 Met à jour le champ de recherche avec le nom de la gare choisie
+                    _departureSearchController.text = selectedStation;
+
+                    // 👉 Nettoie la destination et les anciens marqueurs/polylines
+                    _selectedDestination = null;
+                    _selectedDestinationPosition = null;
+                    _polylines.clear();
+                    _markers.clear();
+
+                    // 👉 Ajoute le marqueur vert pour le départ
+                    _addMarker(selectedStation, _stations[selectedStation]!, true);
+
+                    // 👉 Zoom automatique
+                    zoomToSelectedLocations();
                   });
-                  Navigator.pop(context); // Fermer la boîte de dialogue
+
+                  // 👉 Ferme la boîte de dialogue après sélection
+                  Navigator.pop(context);
                 },
+
               );
             }).toList(),
           ),
@@ -297,6 +318,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   // fin gares
+
+
+
+
+
 
 
   Future<List<String>> getIntermediateStations(String departure, String destination) async {
@@ -419,9 +445,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void zoomToSelectedLocations() {
     if (_selectedDeparture != null && _selectedDestination != null) {
-      LatLngBounds bounds = _calculateLatLngBounds();
-      _mapController?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
-    }
+      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(
+        _selectedDeparturePosition!,
+        15.0,
+      ));}
   }
 
   LatLngBounds _calculateLatLngBounds() {
@@ -472,7 +499,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             Navigator.pop(context);
                             Position position = await Geolocator.getCurrentPosition();
                             String? nearestStation = await _findNearestStation();
-
+                            setState(() {
+                              _currentPosition = position;
+                             // _useCurrentLocationAsDeparture = true;
+                            });
+                            _showNearestStationsDialog();
                             if (nearestStation != null) {
                               setState(() {
                                 _useCurrentLocationAsDeparture = true;
