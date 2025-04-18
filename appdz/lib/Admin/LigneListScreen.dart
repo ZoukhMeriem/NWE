@@ -15,9 +15,8 @@ class _LigneManagementScreenState extends State<LigneManagementScreen> {
     TextEditingController(text: ligne != null ? ligne['nom'] : '');
     final TextEditingController codeController =
     TextEditingController(text: ligne != null ? ligne['code'] : '');
-    List<String> selectedGares = ligne != null
-        ? List<String>.from(ligne['gares'] ?? [])
-        : [];
+    List<String> selectedGares =
+    ligne != null ? List<String>.from(ligne['gares'] ?? []) : [];
 
     final gareSnapshot =
     await FirebaseFirestore.instance.collection('Gare').get();
@@ -25,79 +24,124 @@ class _LigneManagementScreenState extends State<LigneManagementScreen> {
 
     showModalBottomSheet(
       isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       context: context,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-            left: 20,
-            right: 20,
-            top: 20),
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+          left: 20,
+          right: 20,
+          top: 20,
+        ),
         child: SingleChildScrollView(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                ligne == null ? "Ajouter une ligne" : "Modifier la ligne",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              Center(
+                child: Text(
+                  ligne == null ? "Ajouter une ligne" : "Modifier la ligne",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                ),
               ),
+              SizedBox(height: 20),
               TextField(
                 controller: nameController,
-                decoration: InputDecoration(labelText: "Nom"),
+                decoration: InputDecoration(
+                  labelText: "Nom",
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.train),
+                ),
               ),
+              SizedBox(height: 15),
               TextField(
                 controller: codeController,
-                decoration: InputDecoration(labelText: "Code"),
+                decoration: InputDecoration(
+                  labelText: "Code",
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.code),
+                ),
+              ),
+              SizedBox(height: 20),
+              Text(
+                "Sélectionner les gares",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               SizedBox(height: 10),
-              Text("Sélectionner les gares"),
-              ...gares.map((gare) {
-                String nom = gare['name'];
-                String id = gare.id;
-                return CheckboxListTile(
-                  title: Text(nom),
-                  value: selectedGares.contains(id),
-                  onChanged: (val) {
-                    setState(() {
-                      if (val!) {
-                        selectedGares.add(id);
-                      } else {
-                        selectedGares.remove(id);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
-              ElevatedButton(
-                onPressed: () async {
-                  if (nameController.text.isEmpty ||
-                      codeController.text.isEmpty ||
-                      selectedGares.isEmpty) {
+              Container(
+                constraints: BoxConstraints(maxHeight: 200),
+                child: ListView(
+                  shrinkWrap: true,
+                  children: gares.map((gare) {
+                    String nom = gare['name'];
+                    String id = gare.id;
+                    return CheckboxListTile(
+                      title: Text(nom),
+                      value: selectedGares.contains(id),
+                      onChanged: (val) {
+                        setState(() {
+                          if (val!) {
+                            selectedGares.add(id);
+                          } else {
+                            selectedGares.remove(id);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+              SizedBox(height: 20),
+              Center(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFFE8AAB4),
+                    padding: EdgeInsets.symmetric(horizontal: 90, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () async {
+                    if (nameController.text.isEmpty ||
+                        codeController.text.isEmpty ||
+                        selectedGares.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content:
+                            Text("Veuillez remplir tous les champs")),
+                      );
+                      return;
+                    }
+
+                    final ligneData = {
+                      'nom': nameController.text,
+                      'code': codeController.text,
+                      'gares': selectedGares,
+                    };
+
+                    if (ligne == null) {
+                      await FirebaseFirestore.instance
+                          .collection('LIGNE')
+                          .add(ligneData);
+                    } else {
+                      await FirebaseFirestore.instance
+                          .collection('LIGNE')
+                          .doc(ligne.id)
+                          .update(ligneData);
+                    }
+
+                    Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text("Veuillez remplir tous les champs")),
+                          content: Text(ligne == null
+                              ? "Ligne ajoutée avec succès"
+                              : "Ligne modifiée avec succès")),
                     );
-                    return;
-                  }
-
-                  if (ligne == null) {
-                    await FirebaseFirestore.instance.collection('LIGNE').add({
-                      'nom': nameController.text,
-                      'code': codeController.text,
-                      'gares': selectedGares,
-                    });
-                  } else {
-                    await FirebaseFirestore.instance
-                        .collection('LIGNE')
-                        .doc(ligne.id)
-                        .update({
-                      'nom': nameController.text,
-                      'code': codeController.text,
-                      'gares': selectedGares,
-                    });
-                  }
-
-                  Navigator.pop(context);
-                },
-                child: Text(ligne == null ? "Ajouter" : "Modifier"),
+                  },
+                  icon: Icon(ligne == null ? Icons.add : Icons.edit),
+                  label: Text(ligne == null ? "Ajouter" : "Modifier"),
+                ),
               )
             ],
           ),
@@ -234,7 +278,7 @@ class _LigneManagementScreenState extends State<LigneManagementScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddOrEditDialog(),
         child: Icon(Icons.add),
-        backgroundColor: Color(0xFFB3CDE0),
+        backgroundColor: Color(0xFFE8AAB4),
       ),
     );
   }
