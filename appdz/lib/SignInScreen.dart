@@ -17,6 +17,10 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'Admin/AdminHomePage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 
 class SignInScreen extends StatefulWidget {
@@ -30,8 +34,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final TextEditingController passwordController = TextEditingController();
   final user = FirebaseAuth.instance.currentUser;
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
-
+  final GoogleSignIn _googleSignIn = GoogleSignIn( scopes: ['email'],);
   void handleGoogleSignIn() async {
     try {
       final user = await _googleSignIn.signIn();
@@ -40,43 +43,83 @@ class _SignInScreenState extends State<SignInScreen> {
         final userEmail = user.email;
 
         // Appel de la fonction EmailJS
-        await sendWelcomeEmail(userName, userEmail);
+        await sendWelcomeEmail(userEmail);
+
+
       }
     } catch (error) {
       print('Erreur de connexion Google : $error');
     }
   }
 
-  Future<void> sendWelcomeEmail(String userName, String userEmail) async {
-    const serviceId = 'service_u2yoj5q';
-    const templateId = 'template_xzkkyh6';
-    const userId = 'oqcAyNlyd8meS-bZo3'; // EmailJS user ID (public key)
+  Future<void> sendWelcomeEmail(String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://192.168.27.192:3000/send-welcome'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'to': email}),
+      );
 
-    final url = Uri.parse('https://api.emailjs.com/api/v1.0/email/send');
-
-    final response = await http.post(
-      url,
-      headers: {
-        'origin': 'http://localhost',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({
-        'service_id': serviceId,
-        'template_id': templateId,
-        'user_id': userId,
-        'template_params': {
-          'user_name': userName,
-          'user_email': userEmail,
-        },
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      print('E-mail envoyé avec succès');
-    } else {
-      print('Erreur lors de l’envoi de l’e-mail : ${response.body}');
+      if (response.statusCode == 200) {
+        print('✅ Mail de bienvenue envoyé à $email');
+      } else {
+        print('❌ Erreur d’envoi (${response.statusCode}): ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Exception lors de l’envoi du mail : $e');
     }
   }
+
+
+  Future<void> signInWithGoogle(BuildContext context) async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      if (googleUser == null) {
+        Navigator.of(context).pop(); // ferme le dialog
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+
+      if (userCredential.additionalUserInfo!.isNewUser) {
+        print('🆕 Nouvel utilisateur détecté, envoi du mail...');
+        final email = userCredential.user!.email!;
+        await sendWelcomeEmail(email);
+      } else {
+        print('👤 Utilisateur existant, pas de mail envoyé');
+      }
+
+
+      final username = userCredential.user?.displayName ?? 'Utilisateur';
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      await prefs.setString('username', username);
+
+
+
+      Navigator.of(context).pop(); // 👈 très important : ferme le dialog avant de naviguer
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomePage(username: username),
+        ),
+      );
+    } catch (e) {
+      Navigator.of(context).pop(); // ferme le dialog même en cas d'erreur
+      print("Erreur de connexion Google : $e");
+    }
+  }
+
 
 
 
@@ -194,7 +237,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
 
                   // 🔹 Bouton Google en rectangle avec le même style que "Se connecter"
-                  ElevatedButton.icon(
+                 /* ElevatedButton.icon(
                     onPressed: () async {
                       try {
                         showDialog(
@@ -223,7 +266,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         final username = user?.displayName ?? "Utilisateur";
                         final email = user?.email ?? "";
 
-                        await sendWelcomeEmail(username, email);
+                        await sendWelcomeEmail(email);
 
                         Navigator.of(context).pop(); // Ferme le dialog
                         Navigator.pushReplacement(
@@ -234,6 +277,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         Navigator.of(context).pop(); // Ferme le dialog en cas d'erreur
                         print("Erreur de connexion Google : $e");
                       }
+
                     },
 
 
@@ -246,8 +290,28 @@ class _SignInScreenState extends State<SignInScreen> {
                       backgroundColor: Colors.grey,
                       padding: EdgeInsets.symmetric(horizontal: 50.0, vertical: 12.0),
                     ),
-                  ),
+                  ),*/
 
+                  ElevatedButton.icon(
+                      onPressed: () async {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) => Center(child: CircularProgressIndicator()),
+                        );
+
+                        await signInWithGoogle(context); // 👈 passe bien le context
+                      },
+                    icon: FaIcon(FontAwesomeIcons.google, color: Colors.white),
+                    label: Text(
+                      "Se connecter avec Google",
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                      padding: EdgeInsets.symmetric(horizontal: 50.0, vertical: 12.0),
+                    ),
+                  ),
 
 
 
