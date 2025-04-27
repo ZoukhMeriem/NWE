@@ -69,7 +69,7 @@ class _StylishStatsScreenState extends State<StylishStatsScreen> {
 
       if (emploi == 'Étudiant') e++;
       if (emploi == 'Employé') emp++;
-      if (emploi == 'Chômeur') c++;
+      if (emploi == 'Autres') c++;
     }
     for (var doc in evalSnapshot.docs) {
       final data = doc.data();
