@@ -1,4 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+
 
 class SupportPage extends StatefulWidget {
   const SupportPage({Key? key}) : super(key: key);
@@ -12,6 +15,9 @@ class _SupportPageState extends State<SupportPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
+  bool showRatingBar = false;
+
+  double _noteDonnee = 3.0; // note par défaut
 
   final List<Map<String, String>> faqData = [
     {
@@ -57,6 +63,30 @@ class _SupportPageState extends State<SupportPage> {
       _messageController.clear();
     }
   }
+
+
+  void _envoyerNote() async {
+    try {
+      await FirebaseFirestore.instance.collection('Evaluations').add({
+        'note': _noteDonnee, // 🔥 ta note entre 0 et 5 avec des 0.5 possibles
+        'date': Timestamp.now(), // tu ajoutes aussi la date
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Merci pour votre évaluation de $_noteDonnee/5 !')),
+      );
+
+      setState(() {
+        showRatingBar = false; // cacher les étoiles après envoi
+        _noteDonnee = 3.0; // reset la note pour la prochaine fois
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erreur lors de l\'envoi de l\'évaluation.')),
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -127,6 +157,57 @@ class _SupportPageState extends State<SupportPage> {
                     icon: const Icon(Icons.send),
                     label: const Text("Envoyer"),
                   ),
+                  const SizedBox(height: 20),
+                  Text('Évaluez notre application :', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        showRatingBar = true; // 🔥 Quand on clique, on affiche les étoiles
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:Color(0xFFFFECB3),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    ),
+                    icon: const Icon(Icons.star_rate),
+                    label: const Text("Évaluez-nous"),
+                  ),
+
+                  if (showRatingBar) ...[
+                    const SizedBox(height: 20),
+                    Text('⭐ Donnez votre note :', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 10),
+                    RatingBar.builder(
+                      initialRating: _noteDonnee,
+                      minRating: 0,
+                      maxRating: 5,
+                      allowHalfRating: true,
+                      itemCount: 5,
+                      itemPadding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      itemBuilder: (context, _) => const Icon(
+                        Icons.star,
+                        color: Colors.amber,
+                      ),
+                      onRatingUpdate: (rating) {
+                        setState(() {
+                          _noteDonnee = rating; // 🔥 sauver la note choisie
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      onPressed: _envoyerNote,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[700],
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
+                      icon: const Icon(Icons.send),
+                      label: const Text("Envoyer mon évaluation"),
+                    ),
+                  ],
+
+
                 ],
               ),
             ),
