@@ -12,6 +12,9 @@ class _StylishStatsScreenState extends State<StylishStatsScreen> {
   int hommes = 0, femmes = 0;
   int etudiants = 0, employes = 0, chomeurs = 0;
   bool isLoading = true;
+  double moyenneEvaluation = 0.0;
+  int totalEvaluations = 0;
+  Map<int, int> distributionNotes = {}; // 🗂️ pour compter les notes
 
   @override
   void initState() {
@@ -19,7 +22,7 @@ class _StylishStatsScreenState extends State<StylishStatsScreen> {
     fetchStats();
   }
 
-  Future<void> fetchStats() async {
+  /*Future<void> fetchStats() async {
     final snapshot = await FirebaseFirestore.instance.collection('User').get();
 
     int h = 0, f = 0;
@@ -47,7 +50,84 @@ class _StylishStatsScreenState extends State<StylishStatsScreen> {
       chomeurs = c;
       isLoading = false;
     });
+  }*/
+  Future<void> fetchStats() async {
+    final snapshot = await FirebaseFirestore.instance.collection('User').get();
+    final evalSnapshot = await FirebaseFirestore.instance.collection('Evaluations').get();
+
+    int h = 0, f = 0;
+    int e = 0, emp = 0, c = 0;
+    double totalNotes = 0;
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      final sexe = data['sexe'];
+      final emploi = data['emploi'];
+
+      if (sexe == 'Homme') h++;
+      if (sexe == 'Femme') f++;
+
+      if (emploi == 'Étudiant') e++;
+      if (emploi == 'Employé') emp++;
+      if (emploi == 'Chômeur') c++;
+    }
+    for (var doc in evalSnapshot.docs) {
+      final data = doc.data();
+      final note = data['note'];
+      if (note != null) {
+        double noteValue = (note as num).toDouble();
+        int roundedNote = noteValue.round(); // on arrondit à l'entier le plus proche (ex: 4.5 devient 5)
+
+        if (distributionNotes.containsKey(roundedNote)) {
+          distributionNotes[roundedNote] = distributionNotes[roundedNote]! + 1;
+        } else {
+          distributionNotes[roundedNote] = 1;
+        }
+        totalNotes += noteValue; // pour calcul de moyenne
+      }
+    }
+
+    String getNotePercent(int stars) {
+      if (totalEvaluations == 0) return "0%";
+      int count = distributionNotes[stars] ?? 0;
+      double percent = (count / totalEvaluations) * 100;
+      return "${percent.toStringAsFixed(1)}%";
+    }
+
+
+    setState(() {
+      totalUsers = snapshot.docs.length;
+      hommes = h;
+      femmes = f;
+      etudiants = e;
+      employes = emp;
+      chomeurs = c;
+      totalEvaluations = evalSnapshot.docs.length;
+      moyenneEvaluation = totalEvaluations == 0 ? 0 : totalNotes / totalEvaluations;
+      isLoading = false;
+    });
   }
+  Widget themeEtoilesProgressives(double moyenne) {
+    int fullStars = moyenne.floor();
+    bool halfStar = (moyenne - fullStars) >= 0.5;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(5, (index) {
+        if (index < fullStars) {
+          return Icon(Icons.star, color: Colors.amber, size: 30);
+        } else if (index == fullStars && halfStar) {
+          return Icon(Icons.star_half, color: Colors.amber, size: 30);
+        } else {
+          return Icon(Icons.star_border, color: Colors.amber, size: 30);
+        }
+      }),
+    );
+  }
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -123,6 +203,41 @@ class _StylishStatsScreenState extends State<StylishStatsScreen> {
                 ),
               ],
             ),
+
+            const SizedBox(height: 24),
+
+            _buildCardSection(
+              title: "Évaluations des utilisateurs",
+              children: [
+                Center(
+                  child: Column(
+                    children: [
+                      Center(
+                        child: themeEtoilesProgressives(moyenneEvaluation)
+
+                      ),
+                      Text(
+                        moyenneEvaluation > 0
+                            ? "⭐ ${moyenneEvaluation.toStringAsFixed(1)} / 5"
+                            : "Aucune évaluation disponible",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: moyenneEvaluation > 0 ? Colors.black : Colors.grey,
+                        ),
+                      ),
+                      if (moyenneEvaluation > 0)
+                        Text(
+                          "$totalEvaluations évaluations reçues",
+                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+
           ],
         ),
       ),
