@@ -15,7 +15,7 @@ import 'dart:convert';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:dztrainfay/ForgotPasswordScreen.dart';
 import 'Admin/AdminHomePage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -42,8 +42,7 @@ class _SignInScreenState extends State<SignInScreen> {
         final userName = user.displayName ?? 'Utilisateur';
         final userEmail = user.email;
 
-        // Appel de la fonction EmailJS
-        await sendWelcomeEmail(userEmail);
+
 
 
       }
@@ -52,7 +51,7 @@ class _SignInScreenState extends State<SignInScreen> {
     }
   }
 
-  Future<void> sendWelcomeEmail(String email) async {
+  /*Future<void> sendWelcomeEmail(String email) async {
     try {
       final response = await http.post(
         Uri.parse('http://192.168.27.192:3000/send-welcome'),
@@ -68,7 +67,56 @@ class _SignInScreenState extends State<SignInScreen> {
     } catch (e) {
       print('❌ Exception lors de l’envoi du mail : $e');
     }
+  }*/
+
+  Future<void> sendWelcomeEmailWithSendGrid(String email) async {
+    const String sendGridApiKey = 'SG.RDhm4ry3R5KyvqHlrvUGUg.hvCSfxTwhhbHmOcUun5kwo3pHAsTbfu4hHwwSRVhUSY'; // 🔥 remplace ici
+    const String senderEmail = 'dztrains@gmail.com'; // 🔥 ton adresse d'expéditeur validée dans SendGrid
+
+    final url = Uri.parse('https://api.sendgrid.com/v3/mail/send');
+
+    final emailContent = {
+      "personalizations": [
+        {
+          "to": [
+            {"email": email}
+          ],
+          "subject": "Bienvenue sur DzTrain 🚄"
+        }
+      ],
+      "from": {
+        "email": senderEmail,
+        "name": "DzTrain"
+      },
+      "content": [
+        {
+          "type": "text/html", // 🔥 HTML pour un email stylé
+          "value": """
+          <h2>Bienvenue sur DzTrain 🚄 !</h2>
+          <p>Merci d'avoir rejoint notre communauté.</p>
+          <p>Nous sommes ravis de vous avoir parmi nous !</p>
+          <p>Bon voyage avec DzTrain ! 🚂</p>
+        """
+        }
+      ]
+    };
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $sendGridApiKey',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode(emailContent),
+    );
+
+    if (response.statusCode == 202) {
+      print('✅ Email de bienvenue envoyé à $email');
+    } else {
+      print('❌ Erreur lors de l\'envoi: ${response.statusCode} - ${response.body}');
+    }
   }
+
 
 
   Future<void> signInWithGoogle(BuildContext context) async {
@@ -92,7 +140,7 @@ class _SignInScreenState extends State<SignInScreen> {
       if (userCredential.additionalUserInfo!.isNewUser) {
         print('🆕 Nouvel utilisateur détecté, envoi du mail...');
         final email = userCredential.user!.email!;
-        await sendWelcomeEmail(email);
+        await sendWelcomeEmailWithSendGrid(email);
       } else {
         print('👤 Utilisateur existant, pas de mail envoyé');
       }
@@ -134,8 +182,9 @@ class _SignInScreenState extends State<SignInScreen> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Color(0xFFFFDAB9), // Light peach
-                Color(0xFFFDE6D3), // Peach beige pastel
+                Color(0xFF607D8B),
+                Color(0xFFE0E0E0), // Gris moyen (un tout petit peu plus visible)
+                 // Bleu-gris raffiné
               ],// 🎨 change ici
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -177,7 +226,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       },
                       child: Text(
                         'Mot de passe oublié ?',
-                        style: TextStyle(color: Colors.indigo),
+                        style: TextStyle(color: Colors.black),
                       ),
                     ),
                   ),
@@ -247,7 +296,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo,
+                      backgroundColor: Color(0xFF455A64),
                       padding: EdgeInsets.symmetric(horizontal: 110.0, vertical: 12.0),
                     ),
                     child: Text(
@@ -259,62 +308,6 @@ class _SignInScreenState extends State<SignInScreen> {
                   SizedBox(height: 10.0),
 
 
-
-                  // 🔹 Bouton Google en rectangle avec le même style que "Se connecter"
-                 /* ElevatedButton.icon(
-                    onPressed: () async {
-                      try {
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (context) => Center(child: CircularProgressIndicator()),
-                        );
-
-                        final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-
-                        if (googleUser == null) {
-                          Navigator.of(context).pop(); // Ferme le dialog si annulation
-                          return;
-                        }
-
-                        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-                        final credential = GoogleAuthProvider.credential(
-                          accessToken: googleAuth.accessToken,
-                          idToken: googleAuth.idToken,
-                        );
-
-                        await FirebaseAuth.instance.signInWithCredential(credential);
-                        final user = await FirebaseAuth.instance.authStateChanges().first;
-
-                        final username = user?.displayName ?? "Utilisateur";
-                        final email = user?.email ?? "";
-
-                        await sendWelcomeEmail(email);
-
-                        Navigator.of(context).pop(); // Ferme le dialog
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => HomePage(username: username)),
-                        );
-                      } catch (e) {
-                        Navigator.of(context).pop(); // Ferme le dialog en cas d'erreur
-                        print("Erreur de connexion Google : $e");
-                      }
-
-                    },
-
-
-                    icon: FaIcon(FontAwesomeIcons.google, color: Colors.white),
-                    label: Text(
-                      "Se connecter avec Google",
-                      style: TextStyle(fontSize: 16, color: Colors.white),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey,
-                      padding: EdgeInsets.symmetric(horizontal: 50.0, vertical: 12.0),
-                    ),
-                  ),*/
 
                   ElevatedButton.icon(
                       onPressed: () async {
@@ -377,12 +370,12 @@ class _SignInScreenState extends State<SignInScreen> {
           hintText: hintText,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
           contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-          prefixIcon: Icon(icon, color: Colors.indigo),
+          prefixIcon: Icon(icon, color: Color(0xFF455A64)),
           suffixIcon: isPassword
               ? IconButton(
             icon: Icon(
               _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-              color: Colors.indigo,
+              color: Color(0xFF455A64),
             ),
             onPressed: () {
               setState(() {
