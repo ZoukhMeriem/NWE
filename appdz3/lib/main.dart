@@ -126,11 +126,6 @@ class MyApp extends StatelessWidget {
         '/login': (context) => SignInScreen(),
         '/signup': (context) => RegisterPage(),
         '/forgot-password': (context) => ForgotPasswordScreen(),
-        '/verify-email': (context) => VerifyEmailScreen(
-          verificationCode: 0,
-          email: '',
-        ),
-        '/create-password': (context) => CreatePasswordScreen(),
         '/password-changed': (context) => PasswordChangedScreen(),
       },
     );
