@@ -7,6 +7,7 @@ import 'UserListScreen.dart';
 import 'trajet_management_screen.dart';
 import 'statistics_page.dart';
 import 'package:dztrainfay/SignInScreen.dart';
+import 'AdminLostObjectsScreen.dart'; // Import du nouvel écran AdminLostObjectsScreen
 
 class AdminHomePage extends StatelessWidget {
   final String adminUsername;
@@ -144,6 +145,43 @@ class AdminHomePage extends StatelessWidget {
                     icon: Icons.admin_panel_settings,
                     color: const Color(0xFF1E1E1E),
                   ),
+                  // Bouton spécial Objets Perdus
+                  GestureDetector(
+                    onTap: () => _navigateTo(context, AdminLostObjectsScreen()),
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      elevation: 6,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFFC371), Color(0xFFFF5F6D)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.warning_amber_rounded, size: 48, color: Colors.white),
+                            const SizedBox(height: 12),
+                            const Text(
+                              "Objets Perdus",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                   _buildMenuButton(
                     context: context,
                     label: "Gérer les Gares",
@@ -182,7 +220,7 @@ class AdminHomePage extends StatelessWidget {
                   _buildMenuButton(
                     context: context,
                     label: "Voir les Statistiques",
-                    screen: StylishStatsScreen (),//StatistiquesScreen(),
+                    screen: StylishStatsScreen(),
                     icon: Icons.bar_chart,
                     color: const Color(0xFFB3A0F1),
                   ),
@@ -233,3 +271,4 @@ class AdminHomePage extends StatelessWidget {
     );
   }
 }
+
