@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'chatbot_welcome_screen.dart';
 import 'lost_object_screen.dart';
 import 'chat_room_screen.dart';
@@ -30,9 +31,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-    //  backgroundColor: Color(0xFFF5F5F5),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-
       body: SafeArea(
         child: Column(
           children: [
@@ -40,20 +39,18 @@ class _ChatScreenState extends State<ChatScreen> {
             Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(vertical: 20),
-              //color: Color(0xFF353C67),
               color: Theme.of(context).primaryColor,
               child: Center(
                 child: Text(
                   'Discussions',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
-
                 ),
               ),
             ),
 
             // ⚪ Boutons
             Container(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -97,9 +94,7 @@ class _ChatScreenState extends State<ChatScreen> {
             foregroundColor: isSelected
                 ? Colors.white
                 : Theme.of(context).textTheme.bodyMedium?.color,
-           // side: BorderSide(color: Colors.grey.shade400),
             side: BorderSide(color: Theme.of(context).dividerColor),
-
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(30),
             ),
@@ -153,8 +148,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 var lastMessage = messageSnapshot.data!.docs.first;
                 String message = lastMessage["text"] ?? "Aucun message";
                 String time = lastMessage["timestamp"] != null
-                    ? DateFormat('HH:mm')
-                    .format(lastMessage["timestamp"].toDate())
+                    ? DateFormat('HH:mm').format(lastMessage["timestamp"].toDate())
                     : "--:--";
 
                 return _buildChatCard(ligne, message, time, chatId);
@@ -169,7 +163,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildChatCard(
       String ligne, String message, String time, String chatId) {
     return Card(
-      color: Theme.of(context).cardColor, // dans le Card
+      color: Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 2,
       margin: EdgeInsets.symmetric(vertical: 8),
@@ -187,26 +181,42 @@ class _ChatScreenState extends State<ChatScreen> {
           ligne,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).textTheme.titleLarge?.color,
+            color: Theme.of(context).brightness == Brightness.light
+                ? Colors.black
+                : Colors.white,
           ),
         ),
         subtitle: Text(
           message,
-          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.light
+                ? Colors.black87
+                : Colors.white70,
+          ),
         ),
         trailing: Text(
           time,
-          style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.light
+                ? Colors.black45
+                : Colors.white38,
+          ),
         ),
+          onTap: () async {
+            final prefs = await SharedPreferences.getInstance();
+            final username = prefs.getString('username') ?? 'Inconnu';
 
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatRoomScreen(chatId: chatId),
-            ),
-          );
-        },
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChatRoomScreen(
+                  chatId: chatId,
+                  username: username, // ✅ tu passes le bon nom ici
+                ),
+              ),
+            );
+          }
+
       ),
     );
   }
@@ -215,7 +225,12 @@ class _ChatScreenState extends State<ChatScreen> {
     return Center(
       child: Text(
         "Aucune discussion disponible.",
-        style: TextStyle(fontSize: 16, color: Colors.grey),
+        style: TextStyle(
+          fontSize: 16,
+          color: Theme.of(context).brightness == Brightness.light
+              ? Colors.black54
+              : Colors.white54,
+        ),
       ),
     );
   }

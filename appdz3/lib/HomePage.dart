@@ -1,47 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:dztrainfay/SignInScreen.dart';
-import 'package:dztrainfay/compte/compte_screen.dart';
 import 'package:dztrainfay/home_screen.dart';
-import 'package:dztrainfay/chat_screen.dart'; // 🔥 Import du Chat
-
-
+import 'package:dztrainfay/chat_screen.dart';
+import 'package:dztrainfay/compte/compte_screen.dart';
+import 'CustomBottomNavBar.dart';
 
 class HomePage extends StatefulWidget {
   final String username;
-  HomePage({required this.username});
+  const HomePage({required this.username});
 
   @override
-  _HomePageState createState() => _HomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+
   late List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
     _pages = [
-      HomeScreen(),
+      HomeScreen(), // Accueil
       ProfilePage(
         username: widget.username,
-        toggleTheme: (isDark) {
-          // Implémentation de la gestion du mode sombre
-          print('Theme toggled: $isDark');
-        },
-        changeLanguage: (language) {
-          // Implémentation du changement de langue
-          print('Language changed to: $language');
-        },
-        toggleNotifications: (isEnabled) {
-          // Implémentation de la gestion des notifications
-          print('Notifications toggled: $isEnabled');
-        },
-      ),
-
-
-      ChatScreen(), // 🔥 Ajout du Chat
-
+        toggleTheme: (_) {},
+        changeLanguage: (_) {},
+        toggleNotifications: (_) {},
+      ), // Compte
+      ChatScreen(), // Chat
     ];
   }
 
@@ -54,22 +41,13 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
-      body: _pages[_selectedIndex], // 🔥 Affiche la page sélectionnée
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        //backgroundColor: Colors.white,
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-
-        selectedItemColor: Color(0xFFE8AAB4),
-        unselectedItemColor: Colors.grey,
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Accueil"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Compte"),
-          BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chat"),
-
-        ],
+      body: AnimatedSwitcher(
+        duration: Duration(milliseconds: 500),
+        child: _pages[_selectedIndex],
+      ),
+      bottomNavigationBar: CustomBottomNavBar(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
       ),
     );
   }
