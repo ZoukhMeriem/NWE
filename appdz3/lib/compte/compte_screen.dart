@@ -7,7 +7,7 @@ import 'settings_page.dart';
 import 'support_page.dart';
 import 'HoraireTrainPage.dart';
 import 'logout_helper.dart';
-
+import 'historique_trajets_page.dart';
 class ProfilePage extends StatefulWidget {
   final String username;
   final Function(bool) toggleTheme;
@@ -192,9 +192,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SnackBar(content: Text("Notifications à venir.")),
                     );
                   }),
-                  _buildListTile(Icons.history, 'Historique des trajets', () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Historique en développement.")),
+                 _buildListTile(Icons.history, ' trajets favoris', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const HistoriqueTrajetsPage()),
                     );
                   }),
                   _buildListTile(Icons.train, 'Horaires des trains', () {
