@@ -10,6 +10,8 @@ class TrainbotChatScreen extends StatefulWidget {
 class _TrainbotChatScreenState extends State<TrainbotChatScreen> {
   late df.DialogFlowtter dialogFlowtter;
   final TextEditingController _controller = TextEditingController();
+  bool isReady = false;
+  final String userId = "invité";
 
   @override
   void initState() {
@@ -18,55 +20,104 @@ class _TrainbotChatScreenState extends State<TrainbotChatScreen> {
   }
 
   Future<void> initDialogFlowtter() async {
+    debugPrint("🔄 Initialisation de Dialogflow...");
     try {
-      await df.DialogFlowtter.fromFile(path: 'assets/dialogflow-auth.json')
-          .then((instance) => setState(() => dialogFlowtter = instance));
+      final instance = await df.DialogFlowtter.fromFile(
+        path: 'assets/dialogflow-auth.json',
+      );
+      debugPrint("✅ Dialogflow initialisé avec succès !");
+      setState(() {
+        dialogFlowtter = instance;
+        isReady = true;
+      });
     } catch (e) {
-      debugPrint("Erreur d'initialisation Dialogflow: $e");
+      debugPrint("❌ Erreur d'initialisation Dialogflow: $e");
     }
   }
 
   Future<void> _sendMessage() async {
-    if (_controller.text.isNotEmpty) {
-      String userMessage = _controller.text;
+    if (!isReady) {
+      debugPrint("⚠️ Dialogflow n'est pas prêt !");
+      return;
+    }
 
-      // Enregistrer le message utilisateur dans Firestore
+    if (_controller.text.trim().isEmpty) {
+      debugPrint("⚠️ Message vide, rien à envoyer.");
+      return;
+    }
+
+    String userMessage = _controller.text.trim();
+    _controller.clear();
+    debugPrint("➡️ Message utilisateur : $userMessage");
+
+    try {
+      // Sauvegarder le message utilisateur dans Firestore
       await FirebaseFirestore.instance.collection('Assistant_message').add({
         'text': userMessage,
         'sender': 'user',
         'timestamp': FieldValue.serverTimestamp(),
+        'userId': userId,
       });
+      debugPrint("✅ Message utilisateur enregistré dans Firestore");
 
-      _controller.clear();
+    } catch (e) {
+      debugPrint("❌ Erreur en enregistrant le message utilisateur : $e");
+    }
 
-      // Envoyer le message à Dialogflow
-      df.DetectIntentResponse response = await dialogFlowtter.detectIntent(
+    // Envoyer à Dialogflow
+    try {
+      debugPrint("📨 Envoi à Dialogflow...");
+      final response = await dialogFlowtter.detectIntent(
         queryInput: df.QueryInput(text: df.TextInput(text: userMessage)),
       );
 
-      if (response.message != null) {
-        // Enregistrer la réponse du bot dans Firestore
+      debugPrint("📩 Réponse Dialogflow reçue : ${response.message}");
+
+      String botResponse = "Désolée, je n'ai pas compris. Pouvez-vous reformuler ?";
+      if (response.message != null &&
+          response.message!.text != null &&
+          response.message!.text!.text!.isNotEmpty) {
+        botResponse = response.message!.text!.text![0];
+      }
+
+      debugPrint("🤖 Réponse bot : $botResponse");
+
+      // Sauvegarder la réponse du bot dans Firestore
+      try {
         await FirebaseFirestore.instance.collection('Assistant_message').add({
-          'text': response.message!.text!.text![0],
+          'text': botResponse,
           'sender': 'bot',
           'timestamp': FieldValue.serverTimestamp(),
+          'userId': userId,
         });
+        debugPrint("✅ Réponse bot enregistrée dans Firestore");
+
+      } catch (e) {
+        debugPrint("❌ Erreur en enregistrant la réponse bot : $e");
       }
+
+    } catch (e) {
+      debugPrint("❌ Erreur lors de la communication avec Dialogflow : $e");
     }
   }
 
   Widget _buildMessages() {
     return Container(
-      color: Colors.grey[200], // Fond gris léger
+      color: Colors.white,
       child: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('Assistant_message')
+            .where('userId', isEqualTo: userId)
             .orderBy('timestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData) {
+            debugPrint("📡 Chargement des messages...");
+            return Center(child: CircularProgressIndicator());
+          }
 
           var messages = snapshot.data!.docs;
+          debugPrint("📥 ${messages.length} messages chargés depuis Firestore");
 
           if (messages.isEmpty) {
             return Center(
@@ -97,9 +148,8 @@ class _TrainbotChatScreenState extends State<TrainbotChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Trainbot", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Color(0xFF353C67),  // Couleur modifiée ici
-        elevation: 5,
+        title: Text("TrainBot - ${isReady ? 'Prêt ✅' : 'Chargement...'}"),
+        backgroundColor: Colors.indigo,
       ),
       body: Column(
         children: [
@@ -125,7 +175,7 @@ class _TrainbotChatScreenState extends State<TrainbotChatScreen> {
                 ),
                 SizedBox(width: 8),
                 CircleAvatar(
-                  backgroundColor: Color(0xFF353C67), // Couleur modifiée ici
+                  backgroundColor: Colors.indigo,
                   child: IconButton(
                     icon: Icon(Icons.send, color: Colors.white),
                     onPressed: _sendMessage,
@@ -155,7 +205,7 @@ class ChatMessage extends StatelessWidget {
         padding: EdgeInsets.all(14),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
-          color: isUser ? Color(0xFF353C67) : Colors.grey[300], // Couleur modifiée ici
+          color: isUser ? Colors.indigo : Colors.grey[300],
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
