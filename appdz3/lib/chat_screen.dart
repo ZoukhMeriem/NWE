@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'chatbot_welcome_screen.dart';
 import 'lost_object_screen.dart';
 import 'chat_room_screen.dart';
+import 'package:dztrainfay/chat_room_screen.dart'; // ou le bon chemin si différent
 
 class ChatScreen extends StatefulWidget {
   @override
