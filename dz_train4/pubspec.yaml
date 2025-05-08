@@ -87,7 +87,7 @@ flutter:
     - assets/images/sntf_logo.png
     - assets/images/logo3.png
     - assets/images/chat_animation.gif
-    - assets/dialogflow-auth.json
+   
     - assets/fonts/Montserrat/static/Montserrat-Regular.ttf
     - assets/fonts/Montserrat/static/Montserrat-Bold.ttf
     - assets/images/train_on_map.png
